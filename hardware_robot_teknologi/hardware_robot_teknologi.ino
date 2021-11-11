@@ -1,5 +1,3 @@
-#include <EEPROM.h>
-
 //Motor A (Left)
 int motorLeftDirection = 12;   //DIR A
 int motorLeftSpeed = 6;        //PWM A
@@ -23,8 +21,6 @@ int comOutInPin = A5;
 String cmdList = "";
 
 String stateButton = "Pause";
-
-String state = "";
 
 
 void setup() {
@@ -55,75 +51,35 @@ void setup() {
 void loop() {
   
   // MULTIPLEXER Checks CMD-buttons
-  //readStateButtons();
+ 
   if(stateButton == "Start"){
-    //readCmdButtons();  
     processCmd();
-    /*if(state == "forward"){
-            drive(HIGH, 100, HIGH, 100, 100);
-            delay(2000);
-            state = "stop";
-
-    } else if(state == "backward"){
-            Serial.print("test1");
-            drive(LOW, 100, LOW, 100, 100);
-                        delay(2000);
-
-            state = "stop";
-
-
-    } else if (state == "right"){
-            drive(HIGH, 30, LOW, 20, 50);
-                        delay(2000);
-
-            state = "stop";
-
-
-
-    } else if (state == "left"){
-            drive(LOW, 30, HIGH, 20, 50);
-            delay(2000);
-            state = "stop";
-
-    } else if(state == "stop"){
-        delay(100);
-        drive(LOW, 0, LOW, 0, 10);
-
-    }
-    */
-    
     readStateButtons();
     } else if (stateButton == "Pause"){
         Serial.println("Reading input from buttons...");
-        
         readCmdButtons();
 
     }
-    
-  
-  
 }
 
 //Drives the robot
 void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rightSpeed, int distance) {
   //Motor A (Left)
   digitalWrite(motorLeftDirection, leftDirection);
-  digitalWrite(motorLeftSpeed, leftSpeed);
+  analogWrite(motorLeftSpeed, leftSpeed);
   
   //Motor B (Right)
   digitalWrite(motorRightDirection, rightDirection);
-  digitalWrite(motorRightSpeed, rightSpeed);
+  analogWrite(motorRightSpeed, rightSpeed);
 
   //Driving distance/time
   delay(distance);
 
+  //stop
+  analogWrite(motorRightSpeed, 0);
+  analogWrite(motorLeftSpeed, 0);
   
-
 }
-
-// void forward(delay){
- // drive(HIGH, 100, HIGH, 100, delay);
-// }
 
 void count() {
  counter++;
@@ -175,7 +131,6 @@ void readStateButtons(){
 void readCmdButtons() {
   if(readComOutIn(LOW, LOW, LOW)) {
       cmdList += "B";
-
       delay(100);
       while(readComOutIn(LOW, LOW, LOW));
 
@@ -219,39 +174,33 @@ void readCmdButtons() {
 
 void processCmd() {
   for (int i = 0 ; i < cmdList.length() ; i++) {
-    char cmd = cmdList.charAt(i);
-    Serial.println(cmd);
-    if(cmd == 'F') {
-      Serial.println("Processing F");
-      state = "forward";
-      drive(HIGH, 100, HIGH, 100, 100);
-      
-      delay(50);
-      
-
-    } else if (cmd == 'B') {
-      Serial.println("Processing B");
-      state = "backward";
-      drive(LOW, 100, LOW, 100, 100);
-      
-      delay(50);
-    } else if (cmd == 'R') {
-      Serial.println("Processing R");
-      state = "right";
-      drive(HIGH, 30, LOW, 20, 50);
-      
-      delay(50);
-
-
-    } else if (cmd == 'L') {
-      Serial.println("Processing L");
-      state = "left";
-       drive(LOW, 20, HIGH, 30, 50);
-      
-      delay(50);
-    }
+    char cmd = cmdList.charAt(0);
     cmdList.remove(0,1);
     Serial.println("List: " + cmdList);
+    
+    if(cmd == 'F') {
+      
+      Serial.println("Processing F");
+      drive(HIGH, 255, HIGH, 255, 1000);
+      
+    } else if (cmd == 'B') {
+      
+      Serial.println("Processing B");
+      drive(LOW, 255, LOW, 255, 1000);
+      
+    } else if (cmd == 'R') {
+      
+      Serial.println("Processing R");
+      drive(HIGH, 200, LOW, 150, 1000);
+      
+    } else if (cmd == 'L') {
+      
+      Serial.println("Processing L");
+      drive(LOW, 150, HIGH, 200, 1000);
+      
+    }
+    
+    
     
   }
 }

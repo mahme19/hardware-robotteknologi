@@ -20,8 +20,13 @@ int comOutInPin = A5;
 
 String cmdList = "";
 
-String stateButton = "Pause";
+String stateButton = "Stop";
+String pauseButton = "resume";
 
+// Shift-Register
+int latchPin = 4; //ST_CP or RCLK
+int clockPin = 5; //SH_CP or SRCLK
+int dataPin = 7; //DS or SER
 
 void setup() {
   // multiplexer
@@ -46,20 +51,50 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(interruptPin), count, CHANGE);
   attachInterrupt(digitalPinToInterrupt(interruptPin2), secondCount, CHANGE);
   Serial.begin(9600);
+
+  // Shift-register
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+
+  digitalWrite(latchPin, LOW);
+  digitalWrite(clockPin, LOW);
+  digitalWrite(dataPin, LOW);
 }
 
 void loop() {
   
   // MULTIPLEXER Checks CMD-buttons
+
+  writeShiftRegister(B00001000);
+  delay(200);
  
   if(stateButton == "Start"){
-    processCmd();
-    readStateButtons();
-    } else if (stateButton == "Pause"){
+    if(pauseButton == "resume"){
+      
+      processCmd();
+      
+      readStateButtons();
+    } else if(pauseButton == "pause"){
+
+      
+    }
+    } else if (stateButton == "Stop"){
         Serial.println("Reading input from buttons...");
         readCmdButtons();
 
     }
+}
+
+void writeShiftRegister(int output) {
+  //Bring Latch Pin LOW - prepare to commit the register
+  digitalWrite(latchPin, LOW);
+
+  //Overwrites the entire register
+  shiftOut(dataPin, clockPin, MSBFIRST, output);
+
+  //Bring Latch Pin HIGH - commits the register
+  digitalWrite(latchPin, HIGH);
 }
 
 //Drives the robot
@@ -73,7 +108,15 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   analogWrite(motorRightSpeed, rightSpeed);
 
   //Driving distance/time
-  delay(distance);
+  for (int i = 0 ; i < 1000 ; i++) {
+    delay(distance/1000);
+    if(readComOutIn(HIGH, HIGH ,LOW)){
+      analogWrite(motorRightSpeed, 0);
+      analogWrite(motorLeftSpeed, 0);
+      changeState();
+    }
+  }
+ 
 
   //stop
   analogWrite(motorRightSpeed, 0);
@@ -96,15 +139,22 @@ void resetCounters(){
 }
 
 String changeState(){
-  if(stateButton == "Pause"){
+  if(stateButton == "Stop"){
     stateButton = "Start";
   } else if (stateButton == "Start") {
-    stateButton = "Pause";
+    stateButton = "Stop";
     cmdList = "";
   }
   return stateButton;
 }
 
+String changePauseButton(){
+  if(pauseButton == "pause"){
+    pauseButton = "resume";
+  } else if(pauseButton == "resume"){
+    pauseButton = "pause";
+  }
+}
 
 
 bool readComOutIn(bool C, bool B, bool A) {
@@ -125,7 +175,10 @@ void readStateButtons(){
       delay(500);
       
      while(readComOutIn(HIGH, LOW, LOW));
-    }
+    } else if (readComOutIn(HIGH, HIGH ,LOW)) {
+        changePauseButton();
+        while(readComOutIn(HIGH, HIGH ,LOW));
+      }
 }
 
 void readCmdButtons() {
@@ -181,7 +234,7 @@ void processCmd() {
     if(cmd == 'F') {
       
       Serial.println("Processing F");
-      drive(HIGH, 255, HIGH, 255, 1000);
+      drive(HIGH, 255, HIGH, 255, 10000);
       
     } else if (cmd == 'B') {
       
@@ -199,8 +252,5 @@ void processCmd() {
       drive(LOW, 150, HIGH, 200, 1000);
       
     }
-    
-    
-    
   }
 }

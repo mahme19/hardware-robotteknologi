@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 //Motor A (Left)
 int motorLeftDirection = 12;   //DIR A
 int motorLeftSpeed = 6;        //PWM A
@@ -29,8 +31,8 @@ int clockPin = 5; //SH_CP or SRCLK
 int dataPin = 7; //DS or SER
 
 void setup() {
+  
   // multiplexer
-
   pinMode(pinA, OUTPUT);
   pinMode(pinB, OUTPUT);
   pinMode(pinC, OUTPUT);
@@ -60,15 +62,15 @@ void setup() {
   digitalWrite(latchPin, LOW);
   digitalWrite(clockPin, LOW);
   digitalWrite(dataPin, LOW);
+
+  //EEPROM
+  cmdList = readFromEEPROM();
+  Serial.println("LAST CMD : " + cmdList);
 }
 
 void loop() {
-  
-  // MULTIPLEXER Checks CMD-buttons
 
-  writeShiftRegister(B00001000);
-  delay(200);
- 
+  // MULTIPLEXER Checks CMD-buttons
   if(stateButton == "Start"){
     if(pauseButton == "resume"){
       
@@ -80,10 +82,31 @@ void loop() {
       
     }
     } else if (stateButton == "Stop"){
-        Serial.println("Reading input from buttons...");
+        //Serial.println("Reading input from buttons...");
         readCmdButtons();
-
+        writeToEEPROM(cmdList);   
     }
+}
+
+void writeToEEPROM(String str) {
+  int len = str.length();
+  EEPROM.write(0, len);
+
+  for (int i = 0; i < len ; i++) {
+    EEPROM.write(0+1+i, str[i]);
+  }
+}
+
+String readFromEEPROM() {
+  int len = EEPROM.read(0);
+ // String cmd = "";
+  char data[len +1];
+  for (int i = 0 ; i < len ; i++) {
+  //  cmd += EEPROM.read(0+1+i);
+    data[i] = EEPROM.read(0 + 1 + i);
+  }
+  data[len] = '\0';
+  return String(data);
 }
 
 void writeShiftRegister(int output) {
@@ -225,6 +248,8 @@ void readCmdButtons() {
     }
 }
 
+
+
 void processCmd() {
   for (int i = 0 ; i < cmdList.length() ; i++) {
     char cmd = cmdList.charAt(0);
@@ -234,23 +259,32 @@ void processCmd() {
     if(cmd == 'F') {
       
       Serial.println("Processing F");
-      drive(HIGH, 255, HIGH, 255, 10000);
+      writeShiftRegister(B00010000);
+      drive(HIGH, 255, HIGH, 255, 1000);
+      //writeShiftRegister(B00000000);
       
     } else if (cmd == 'B') {
-      
+
       Serial.println("Processing B");
+      writeShiftRegister(B00100000);
       drive(LOW, 255, LOW, 255, 1000);
+      //writeShiftRegister(B00000000);
       
     } else if (cmd == 'R') {
       
       Serial.println("Processing R");
+      writeShiftRegister(B01000000);
       drive(HIGH, 200, LOW, 150, 1000);
+      //writeShiftRegister(B00000000);
       
     } else if (cmd == 'L') {
-      
+
       Serial.println("Processing L");
+      writeShiftRegister(B10000000);
       drive(LOW, 150, HIGH, 200, 1000);
+      //writeShiftRegister(B00000000);
       
     }
   }
+  Serial.println("Cmdlist saved in eeprom: " +readFromEEPROM());
 }

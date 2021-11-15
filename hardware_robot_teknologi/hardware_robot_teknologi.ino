@@ -66,6 +66,8 @@ void setup() {
   //EEPROM
   cmdList = readFromEEPROM();
   Serial.println("LAST CMD : " + cmdList);
+
+  writeShiftRegister(B00000000);
 }
 
 void loop() {
@@ -76,14 +78,18 @@ void loop() {
       
       processCmd();
       
-      readStateButtons();
-    } else if(pauseButton == "pause"){
+      readStateButton();
+      readPauseButton();
 
-      
+    } else if(pauseButton == "pause"){
+      readPauseButton();
+      readStateButton();
     }
+
     } else if (stateButton == "Stop"){
         //Serial.println("Reading input from buttons...");
         readCmdButtons();
+        readStateButton();
         writeToEEPROM(cmdList);   
     }
 }
@@ -99,10 +105,9 @@ void writeToEEPROM(String str) {
 
 String readFromEEPROM() {
   int len = EEPROM.read(0);
- // String cmd = "";
+
   char data[len +1];
   for (int i = 0 ; i < len ; i++) {
-  //  cmd += EEPROM.read(0+1+i);
     data[i] = EEPROM.read(0 + 1 + i);
   }
   data[len] = '\0';
@@ -137,15 +142,19 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
       analogWrite(motorRightSpeed, 0);
       analogWrite(motorLeftSpeed, 0);
       changeState();
+    } else if (readComOutIn(HIGH, LOW ,LOW)) {
+      analogWrite(motorRightSpeed, 0);
+      analogWrite(motorLeftSpeed, 0);
+      changePauseButton();
     }
   }
- 
 
   //stop
   analogWrite(motorRightSpeed, 0);
   analogWrite(motorLeftSpeed, 0);
   
 }
+
 
 void count() {
  counter++;
@@ -177,6 +186,7 @@ String changePauseButton(){
   } else if(pauseButton == "resume"){
     pauseButton = "pause";
   }
+  return pauseButton;
 }
 
 
@@ -188,28 +198,41 @@ bool readComOutIn(bool C, bool B, bool A) {
 
   //Reads the channel
   boolean channelValue = digitalRead(comOutInPin);
+  if (channelValue) {
+    writeShiftRegister(B00000001);  
+    delay(50);
+    writeShiftRegister(B00000000);
+  }
   return channelValue;
 }
 
-void readStateButtons(){
-  if(readComOutIn(HIGH, LOW,LOW)){
+void readStateButton(){
+  if(readComOutIn(HIGH, HIGH, LOW)){
       changeState();
       Serial.println(stateButton);
-      delay(500);
+      delay(100);
       
-     while(readComOutIn(HIGH, LOW, LOW));
-    } else if (readComOutIn(HIGH, HIGH ,LOW)) {
+     while(readComOutIn(HIGH, HIGH, LOW));
+    }
+}
+
+void readPauseButton(){
+    if (readComOutIn(HIGH, LOW ,LOW)) {
         changePauseButton();
-        while(readComOutIn(HIGH, HIGH ,LOW));
+        Serial.println(pauseButton);
+        delay(100);
+
+        while(readComOutIn(HIGH, LOW ,LOW));
       }
 }
+
 
 void readCmdButtons() {
   if(readComOutIn(LOW, LOW, LOW)) {
       cmdList += "B";
+
       delay(100);
       while(readComOutIn(LOW, LOW, LOW));
-
     }
     
     else if(readComOutIn(LOW, LOW, HIGH)) {
@@ -221,7 +244,6 @@ void readCmdButtons() {
     
     else if(readComOutIn(LOW, HIGH, LOW)) {
       cmdList += "L";
-      
 
       delay(100);
       while(readComOutIn(LOW, HIGH, LOW));
@@ -232,19 +254,6 @@ void readCmdButtons() {
       
       delay(100);
       while(readComOutIn(LOW, HIGH, HIGH));
-     
-    } else if(readComOutIn(HIGH, LOW,LOW)){
-      changeState();
-      Serial.println(stateButton);
-      Serial.println("List : " + cmdList);
-      delay(100);
-      
-     while(readComOutIn(HIGH, LOW, LOW));
-    } 
-    else if(readComOutIn(HIGH, HIGH ,LOW)){
-      Serial.println("STOP");
-      delay(100);
-     while(readComOutIn(HIGH, HIGH, LOW));
     }
 }
 
@@ -257,7 +266,6 @@ void processCmd() {
     Serial.println("List: " + cmdList);
     
     if(cmd == 'F') {
-      
       Serial.println("Processing F");
       writeShiftRegister(B00010000);
       drive(HIGH, 255, HIGH, 255, 1000);
@@ -285,6 +293,8 @@ void processCmd() {
       //writeShiftRegister(B00000000);
       
     }
+    readPauseButton();
   }
+ // writeShiftRegister(B00000000);
   Serial.println("Cmdlist saved in eeprom: " +readFromEEPROM());
 }

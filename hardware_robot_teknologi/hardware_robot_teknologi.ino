@@ -82,12 +82,14 @@ void loop() {
       readPauseButton();
 
     } else if(pauseButton == "pause"){
+      writeShiftRegister(B00000100);
       readPauseButton();
       readStateButton();
     }
 
     } else if (stateButton == "Stop"){
         //Serial.println("Reading input from buttons...");
+        writeShiftRegister(B00000010);
         readCmdButtons();
         readStateButton();
         writeToEEPROM(cmdList);   
@@ -295,6 +297,9 @@ void processCmd() {
     }
     readPauseButton();
   }
- // writeShiftRegister(B00000000);
+  writeShiftRegister(B00000000);
+  if(cmdList=="") {
+    changeState();
+  }
   Serial.println("Cmdlist saved in eeprom: " +readFromEEPROM());
 }

@@ -71,7 +71,6 @@ void setup() {
 }
 
 void loop() {
-
   // MULTIPLEXER Checks CMD-buttons
   if(stateButton == "Start"){
     if(pauseButton == "resume"){
@@ -92,7 +91,11 @@ void loop() {
         writeShiftRegister(B00000010);
         readCmdButtons();
         readStateButton();
-        writeToEEPROM(cmdList);   
+        if(cmdList != "") {
+          writeToEEPROM(cmdList); 
+        } else {
+          cmdList = readFromEEPROM();
+        }
     }
 }
 

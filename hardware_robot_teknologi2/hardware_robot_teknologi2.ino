@@ -8,35 +8,33 @@ int motorLeftSpeed = 6;        //PWM A
 int motorRightDirection = 13;   //DIR B
 int motorRightSpeed = 11;       //PWM B
 
-int interruptPin = 2;
-int interruptPin2 = 3;
-volatile int counter = 0;
-volatile int secondCounter = 0;
-
-// Multiplexer
-int pinA = 10;
-int pinB = 9;
-int pinC = 8;
-
-int comOutInPin = A5;
-
 String cmdList = "";
 
 String stateButton = "Stop";
-String pauseButton = "resume";
 
 // Shift-Register
-int latchPin = 4; //ST_CP or RCLK
-int clockPin = 5; //SH_CP or SRCLK
+int latchPin = 5; //ST_CP or RCLK
+int clockPin = 4; //SH_CP or SRCLK
 int dataPin = 7; //DS or SER
+
+// Distance-sensor
+int trigPin = 9;            //the used trig pin
+int echoPin = 8;            //the used echo pin
+//int distance; //Distance of elements in front of robot
+
+// Line-sensor
+int leftLineSensor= A5;
+int rightLineSensor = A4;
 
 void setup() {
   
   // multiplexer
+  /*
   pinMode(pinA, OUTPUT);
   pinMode(pinB, OUTPUT);
   pinMode(pinC, OUTPUT);
   pinMode(comOutInPin, INPUT_PULLUP);
+  */
   
   //Motor A (Left)
   pinMode(motorLeftDirection, OUTPUT);
@@ -45,13 +43,7 @@ void setup() {
   //Motor B (Right)
   pinMode(motorRightDirection, OUTPUT);
   pinMode(motorRightSpeed, OUTPUT);
-
-
-  pinMode(interruptPin, INPUT_PULLUP);
   
-  pinMode(interruptPin2, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), count, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(interruptPin2), secondCount, CHANGE);
   Serial.begin(9600);
 
   // Shift-register
@@ -63,40 +55,38 @@ void setup() {
   digitalWrite(clockPin, LOW);
   digitalWrite(dataPin, LOW);
 
+  pinMode(leftLineSensor, INPUT);
+  pinMode(rightLineSensor, INPUT);
+  
   //EEPROM
   cmdList = readFromEEPROM();
-  Serial.println("LAST CMD : " + cmdList);
 
   writeShiftRegister(B00000000);
+
 }
 
 void loop() {
+  Serial.print("Left : ");
+  Serial.println(analogRead(leftLineSensor));
+
+  Serial.print("Right : ");
+  Serial.println(analogRead(rightLineSensor));
+  delay(100);
+  //Serial.println("Left: " + analogRead(leftLineSensor) + " | Right: " + analogRead(rightLineSensor));
   // MULTIPLEXER Checks CMD-buttons
-  if(stateButton == "Start"){
-    if(pauseButton == "resume"){
-      
-      processCmd();
-      
-      readStateButton();
-      readPauseButton();
+}
 
-    } else if(pauseButton == "pause"){
-      writeShiftRegister(B00000100);
-      readPauseButton();
-      readStateButton();
-    }
-
-    } else if (stateButton == "Stop"){
-        //Serial.println("Reading input from buttons...");
-        writeShiftRegister(B00000010);
-        readCmdButtons();
-        readStateButton();
-        if(cmdList != "") {
-          writeToEEPROM(cmdList); 
-        } else {
-          cmdList = readFromEEPROM();
-        }
-    }
+// Use method to calculate distance, and dictacte if robot should stop for obstacle
+int getDistance() {
+  //sends out a trigger sound
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  
+  //returns the received echo in centimeter
+  return pulseIn(echoPin, HIGH)* 0.034/2;
 }
 
 void writeToEEPROM(String str) {
@@ -143,16 +133,7 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   //Driving distance/time
   for (int i = 0 ; i < 1000 ; i++) {
     delay(distance/1000);
-    if(readComOutIn(HIGH, HIGH ,LOW)){
-      analogWrite(motorRightSpeed, 0);
-      analogWrite(motorLeftSpeed, 0);
-      changeState();
-    } else if (readComOutIn(HIGH, LOW ,LOW)) {
-      analogWrite(motorRightSpeed, 0);
-      analogWrite(motorLeftSpeed, 0);
-      changePauseButton();
     }
-  }
 
   //stop
   analogWrite(motorRightSpeed, 0);
@@ -160,20 +141,6 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   
 }
 
-
-void count() {
- counter++;
-}
-
-void secondCount(){
-  secondCounter++;
-}
-
-
-void resetCounters(){
-  counter = 0;
-  secondCounter = 0;
-}
 
 String changeState(){
   if(stateButton == "Stop"){
@@ -185,16 +152,7 @@ String changeState(){
   return stateButton;
 }
 
-String changePauseButton(){
-  if(pauseButton == "pause"){
-    pauseButton = "resume";
-  } else if(pauseButton == "resume"){
-    pauseButton = "pause";
-  }
-  return pauseButton;
-}
-
-
+/*
 bool readComOutIn(bool C, bool B, bool A) {
   //Defines which channel the comOutIn port is connected to
   digitalWrite(pinA, A);
@@ -305,4 +263,4 @@ void processCmd() {
     changeState();
   }
   Serial.println("Cmdlist saved in eeprom: " +readFromEEPROM());
-}
+}*/

@@ -26,7 +26,12 @@ int echoPin = 8;            //the used echo pin
 int leftLineSensor= A5;
 int rightLineSensor = A4;
 
+int analogLeft = 0;
+int analogRight = 0;
+
 void setup() {
+
+
   
   // multiplexer
   /*
@@ -66,15 +71,52 @@ void setup() {
 }
 
 void loop() {
+
+
+ 
+  /*
   Serial.print("Left : ");
   Serial.println(analogRead(leftLineSensor));
 
   Serial.print("Right : ");
   Serial.println(analogRead(rightLineSensor));
-  delay(100);
+  
+*/  
+  analogLeft = analogRead(leftLineSensor);
+  analogRight = analogRead(rightLineSensor);
+
+
+  
+
+  if(analogLeft > 700 && analogRight > 700){
+     drive(HIGH, 0, HIGH, 0, 500);
+     Serial.println("STOPPED");
+     
+  } else if( analogLeft < 700){
+                  drive(HIGH, 200, LOW, 150, 100);
+
+        Serial.println("Left");
+
+  } else if ( analogRight < 700) {
+      drive(HIGH, 150, LOW, 200, 100);
+
+      Serial.println("Right");
+  }
+  
+
+  
   //Serial.println("Left: " + analogRead(leftLineSensor) + " | Right: " + analogRead(rightLineSensor));
   // MULTIPLEXER Checks CMD-buttons
 }
+
+void goRight(){
+      drive(HIGH, 200, LOW, 150, 500);
+}
+void goLeft(){
+      drive(HIGH, 150, LOW, 200, 500);
+
+}
+
 
 // Use method to calculate distance, and dictacte if robot should stop for obstacle
 int getDistance() {
@@ -131,10 +173,13 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   analogWrite(motorRightSpeed, rightSpeed);
 
   //Driving distance/time
-  for (int i = 0 ; i < 1000 ; i++) {
+  /*
+   for (int i = 0 ; i < 1000 ; i++) {
     delay(distance/1000);
     }
+    */
 
+  delay(distance);
   //stop
   analogWrite(motorRightSpeed, 0);
   analogWrite(motorLeftSpeed, 0);

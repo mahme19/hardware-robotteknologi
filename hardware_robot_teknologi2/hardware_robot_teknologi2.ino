@@ -60,8 +60,11 @@ void setup() {
   digitalWrite(clockPin, LOW);
   digitalWrite(dataPin, LOW);
 
+  //Sensors
   pinMode(leftLineSensor, INPUT);
   pinMode(rightLineSensor, INPUT);
+
+ 
   
   //EEPROM
   cmdList = readFromEEPROM();
@@ -71,51 +74,85 @@ void setup() {
 }
 
 void loop() {
-
-
- 
-  /*
-  Serial.print("Left : ");
+  Serial.print("Left:");
   Serial.println(analogRead(leftLineSensor));
-
-  Serial.print("Right : ");
+  Serial.print("Right:");
   Serial.println(analogRead(rightLineSensor));
-  
-*/  
-  analogLeft = analogRead(leftLineSensor);
-  analogRight = analogRead(rightLineSensor);
 
 
-  
-
-  if(analogLeft > 700 && analogRight > 700){
-     drive(HIGH, 0, HIGH, 0, 500);
-     Serial.println("STOPPED");
-     
-  } else if( analogLeft < 700){
-                  drive(HIGH, 200, LOW, 150, 100);
-
-        Serial.println("Left");
-
-  } else if ( analogRight < 700) {
-      drive(HIGH, 150, LOW, 200, 100);
-
-      Serial.println("Right");
-  }
-  
-
-  
-  //Serial.println("Left: " + analogRead(leftLineSensor) + " | Right: " + analogRead(rightLineSensor));
-  // MULTIPLEXER Checks CMD-buttons
+  followLine();
+  //turnLeft();
 }
 
-void goRight(){
+void turnLeft() {
+  while(true) {
+    drive(HIGH, 150, LOW, 200, 0);
+    if(analogRight > 700) {
+      break;  
+    }
+    //drive right motor
+    //if left sensor black - break  
+  }
+
+  while(true) {
+    drive(HIGH, 150, LOW, 200, 0);
+    if(analogRight < 700) {
+      break;  
+    }
+    //drive right motor
+    //if left sensor white - break  
+  }
+}
+
+void followLine() {
+
+  //analogLeft = analogRead(leftLineSensor);
+  //analogRight = analogRead(rightLineSensor);
+  
+  while(true) {
+    if(analogRead(leftLineSensor) < 700){
+      //Motor A (Left - drive)
+      digitalWrite(motorLeftDirection, HIGH);
+      analogWrite(motorLeftSpeed, 150);
+      Serial.println("Left");
+    }
+    else {
+      //Motor A (Left - stop)
+      digitalWrite(motorLeftDirection, HIGH);
+      analogWrite(motorLeftSpeed, 0);
+    }
+  
+    if( analogRead(rightLineSensor) < 700){
+      //Motor B (Right - drive)
+      digitalWrite(motorRightDirection, LOW);
+      analogWrite(motorRightSpeed, 150);
+    }
+    else {
+      //Motor B (Right - stop)
+      digitalWrite(motorRightDirection, LOW);
+      analogWrite(motorRightSpeed, 0);
+    }
+
+    if( analogLeft > 700 &&  analogRight > 700){
+      break;
+    }
+  }  
+}
+
+void turnRight(){
       drive(HIGH, 200, LOW, 150, 500);
 }
-void goLeft(){
-      drive(HIGH, 150, LOW, 200, 500);
+/*
+void turnLeft(){
+  while(analogRight > 700) {
+    drive(HIGH, 150, LOW, 200, 0);
+  }
+  while(analogRight < 700) {
+    drive(HIGH, 150, LOW, 200, 0);
+  }
+}*/
 
-}
+
 
 
 // Use method to calculate distance, and dictacte if robot should stop for obstacle

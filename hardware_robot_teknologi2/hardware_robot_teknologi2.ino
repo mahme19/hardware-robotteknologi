@@ -74,38 +74,15 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("Left:");
-  Serial.println(analogRead(leftLineSensor));
-  Serial.print("Right:");
-  Serial.println(analogRead(rightLineSensor));
-
-
   followLine();
-  //turnLeft();
+  turnLeft();
 }
 
-void turnLeft() {
-  while(true) {
-    drive(HIGH, 150, LOW, 200, 0);
-    if(analogRight > 700) {
-      break;  
-    }
-    //drive right motor
-    //if left sensor black - break  
-  }
 
-  while(true) {
-    drive(HIGH, 150, LOW, 200, 0);
-    if(analogRight < 700) {
-      break;  
-    }
-    //drive right motor
-    //if left sensor white - break  
-  }
-}
 
 void followLine() {
 
+  Serial.println("Following line");
   //analogLeft = analogRead(leftLineSensor);
   //analogRight = analogRead(rightLineSensor);
   
@@ -114,12 +91,13 @@ void followLine() {
       //Motor A (Left - drive)
       digitalWrite(motorLeftDirection, HIGH);
       analogWrite(motorLeftSpeed, 150);
-      Serial.println("Left");
+      //Serial.println("Left");
     }
     else {
       //Motor A (Left - stop)
       digitalWrite(motorLeftDirection, HIGH);
       analogWrite(motorLeftSpeed, 0);
+      delay(10);
     }
   
     if( analogRead(rightLineSensor) < 700){
@@ -131,16 +109,42 @@ void followLine() {
       //Motor B (Right - stop)
       digitalWrite(motorRightDirection, LOW);
       analogWrite(motorRightSpeed, 0);
+      delay(10);
     }
 
-    if( analogLeft > 700 &&  analogRight > 700){
+    if(analogRead(leftLineSensor) > 700 &&  analogRead(rightLineSensor) > 700){
+  
       break;
     }
   }  
 }
 
-void turnRight(){
-      drive(HIGH, 200, LOW, 150, 500);
+//void turnRight(){
+//      drive(HIGH, 200, LOW, 150, 500);
+//}
+
+void turnLeft() {
+
+  //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
+  drive(LOW, 150, HIGH, 150, 10);
+  
+  delay(100);
+  Serial.println("Turning left");
+  while(true) {
+    digitalWrite(motorRightDirection, LOW);
+    analogWrite(motorRightSpeed, 150);
+    if(analogRead(rightLineSensor) < 700) { //If hits white
+      break;  
+    }
+  }
+
+  while(true) {
+    digitalWrite(motorRightDirection, LOW);
+    analogWrite(motorRightSpeed, 150);
+    if(analogRead(rightLineSensor) > 700) { //If hits black
+      break;
+    }
+  }
 }
 /*
 void turnLeft(){

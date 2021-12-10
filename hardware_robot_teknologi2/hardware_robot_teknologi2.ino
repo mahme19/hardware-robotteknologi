@@ -8,7 +8,6 @@ int motorLeftSpeed = 6;        //PWM A
 int motorRightDirection = 13;   //DIR B
 int motorRightSpeed = 11;       //PWM B
 
-String cmdList = "";
 
 String stateButton = "Stop";
 
@@ -28,10 +27,18 @@ int rightLineSensor = A4;
 
 int analogLeft = 0;
 int analogRight = 0;
+int buttonPin = 2;
+
+bool buttonState = digitalRead(buttonPin);
+
+String cmdList = "FLFRFUFLF";
+
+
 
 void setup() {
 
-
+  // button
+  pinMode(buttonPin, INPUT);
   
   // multiplexer
   /*
@@ -67,15 +74,20 @@ void setup() {
  
   
   //EEPROM
-  cmdList = readFromEEPROM();
+ // cmdList = readFromEEPROM();
 
   writeShiftRegister(B00000000);
 
 }
 
 void loop() {
-  followLine();
-  turnLeft();
+  if(buttonState == true){
+    changeState();
+  }
+
+  Serial.println(stateButton);
+  
+ // processCmd();
 }
 
 
@@ -118,17 +130,32 @@ void followLine() {
     }
   }  
 }
+void turnRight(){
+  //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
+  drive(LOW, 150, HIGH, 150, 10);
+  
+  Serial.println("Turning right");
+  while(true) {
+    digitalWrite(motorLeftDirection, HIGH);
+    analogWrite(motorLeftSpeed, 150);
+    if(analogRead(leftLineSensor) < 700) { //If hits white
+      break;  
+    }
+  }
 
-//void turnRight(){
-//      drive(HIGH, 200, LOW, 150, 500);
-//}
-
+  while(true) {
+    digitalWrite(motorLeftDirection, HIGH);
+    analogWrite(motorLeftSpeed, 150);
+    if(analogRead(leftLineSensor) > 700) { //If hits black
+      break;
+    }
+  }
+}
 void turnLeft() {
 
   //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
   
-  delay(100);
   Serial.println("Turning left");
   while(true) {
     digitalWrite(motorRightDirection, LOW);
@@ -146,15 +173,42 @@ void turnLeft() {
     }
   }
 }
-/*
-void turnLeft(){
-  while(analogRight > 700) {
-    drive(HIGH, 150, LOW, 200, 0);
+void uTurn() {
+
+  //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
+  drive(LOW, 150, HIGH, 150, 10);
+  
+  Serial.println("U Turning");
+  while(true) {
+    digitalWrite(motorLeftDirection, HIGH);
+    analogWrite(motorLeftSpeed, 150);
+    digitalWrite(motorRightDirection, HIGH);
+    analogWrite(motorRightSpeed, 150);
+    if(analogRead(rightLineSensor) < 700) { //If hits white
+      break;  
+    }
   }
-  while(analogRight < 700) {
-    drive(HIGH, 150, LOW, 200, 0);
+
+  while(true) {
+    digitalWrite(motorLeftDirection, HIGH);
+    analogWrite(motorLeftSpeed, 150);
+    digitalWrite(motorRightDirection, HIGH);
+    analogWrite(motorRightSpeed, 150);
+    if(analogRead(rightLineSensor) > 700) { //If hits black
+      break;
+    }
   }
-}*/
+
+  while(true) {
+    digitalWrite(motorLeftDirection, HIGH);
+    analogWrite(motorLeftSpeed, 150);
+    digitalWrite(motorRightDirection, HIGH);
+    analogWrite(motorRightSpeed, 150);
+    if(analogRead(rightLineSensor) < 700) { //If hits white
+      break;  
+    }
+  }
+}
 
 
 
@@ -306,7 +360,7 @@ void readCmdButtons() {
     }
 }
 
-
+*/
 
 void processCmd() {
   for (int i = 0 ; i < cmdList.length() ; i++) {
@@ -315,38 +369,37 @@ void processCmd() {
     Serial.println("List: " + cmdList);
     
     if(cmd == 'F') {
-      Serial.println("Processing F");
+      Serial.println("Following line");
       writeShiftRegister(B00010000);
-      drive(HIGH, 255, HIGH, 255, 1000);
-      //writeShiftRegister(B00000000);
-      
-    } else if (cmd == 'B') {
-
-      Serial.println("Processing B");
-      writeShiftRegister(B00100000);
-      drive(LOW, 255, LOW, 255, 1000);
+      followLine();
       //writeShiftRegister(B00000000);
       
     } else if (cmd == 'R') {
-      
-      Serial.println("Processing R");
-      writeShiftRegister(B01000000);
-      drive(HIGH, 200, LOW, 150, 1000);
+
+      Serial.println("Going right");
+      writeShiftRegister(B00100000);
+      turnRight();
       //writeShiftRegister(B00000000);
       
     } else if (cmd == 'L') {
+      
+      Serial.println("Going left");
+      writeShiftRegister(B01000000);
+      turnLeft();
+      //writeShiftRegister(B00000000);
+      
+    } else if (cmd == 'U') {
 
       Serial.println("Processing L");
       writeShiftRegister(B10000000);
-      drive(LOW, 150, HIGH, 200, 1000);
+      uTurn();
       //writeShiftRegister(B00000000);
       
     }
-    readPauseButton();
   }
   writeShiftRegister(B00000000);
   if(cmdList=="") {
     changeState();
   }
-  Serial.println("Cmdlist saved in eeprom: " +readFromEEPROM());
-}*/
+  
+}

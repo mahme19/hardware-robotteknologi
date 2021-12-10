@@ -1,4 +1,3 @@
-#include <EEPROM.h>
 
 //Motor A (Left)
 int motorLeftDirection = 12;   //DIR A
@@ -31,7 +30,7 @@ int buttonPin = 2;
 
 bool buttonState = digitalRead(buttonPin);
 
-String cmdList = "FLFRFUFLF";
+String cmdList = "LRU";
 
 
 
@@ -80,14 +79,9 @@ void setup() {
 
 }
 
+//TODO: Den stopper ved sidste U-cmd. Tjek at foorlop i processcmd kører korrekt.
 void loop() {
-  if(buttonState == true){
-    changeState();
-  }
-
-  Serial.println(stateButton);
-  
- // processCmd();
+  processCmd();
 }
 
 
@@ -226,26 +220,6 @@ int getDistance() {
   return pulseIn(echoPin, HIGH)* 0.034/2;
 }
 
-void writeToEEPROM(String str) {
-  int len = str.length();
-  EEPROM.write(0, len);
-
-  for (int i = 0; i < len ; i++) {
-    EEPROM.write(0+1+i, str[i]);
-  }
-}
-
-String readFromEEPROM() {
-  int len = EEPROM.read(0);
-
-  char data[len +1];
-  for (int i = 0 ; i < len ; i++) {
-    data[i] = EEPROM.read(0 + 1 + i);
-  }
-  data[len] = '\0';
-  return String(data);
-}
-
 void writeShiftRegister(int output) {
   //Bring Latch Pin LOW - prepare to commit the register
   digitalWrite(latchPin, LOW);
@@ -281,7 +255,6 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   
 }
 
-
 String changeState(){
   if(stateButton == "Stop"){
     stateButton = "Start";
@@ -292,114 +265,62 @@ String changeState(){
   return stateButton;
 }
 
-/*
-bool readComOutIn(bool C, bool B, bool A) {
-  //Defines which channel the comOutIn port is connected to
-  digitalWrite(pinA, A);
-  digitalWrite(pinB, B);
-  digitalWrite(pinC, C);
 
-  //Reads the channel
-  boolean channelValue = digitalRead(comOutInPin);
-  if (channelValue) {
-    writeShiftRegister(B00000001);  
-    delay(50);
-    writeShiftRegister(B00000000);
-  }
-  return channelValue;
+void lightNxtCmd(char nextCmd) {
+  if(nextCmd == 'R') {
+    Serial.println("R-LIGHT");
+    writeShiftRegister(B10000000);
+  } else if(nextCmd == 'L') {
+    Serial.println("L-LIGHT");
+    writeShiftRegister(B01000000);
+  } else if(nextCmd == 'U') {
+    Serial.println("U-LIGHT");
+    writeShiftRegister(B00100000);
+  } 
 }
-
-void readStateButton(){
-  if(readComOutIn(HIGH, HIGH, LOW)){
-      changeState();
-      Serial.println(stateButton);
-      delay(100);
-      
-     while(readComOutIn(HIGH, HIGH, LOW));
-    }
-}
-
-void readPauseButton(){
-    if (readComOutIn(HIGH, LOW ,LOW)) {
-        changePauseButton();
-        Serial.println(pauseButton);
-        delay(100);
-
-        while(readComOutIn(HIGH, LOW ,LOW));
-      }
-}
-
-
-void readCmdButtons() {
-  if(readComOutIn(LOW, LOW, LOW)) {
-      cmdList += "B";
-
-      delay(100);
-      while(readComOutIn(LOW, LOW, LOW));
-    }
-    
-    else if(readComOutIn(LOW, LOW, HIGH)) {
-      cmdList += "R";
-
-      delay(100);
-      while(readComOutIn(LOW, LOW, HIGH));
-    } 
-    
-    else if(readComOutIn(LOW, HIGH, LOW)) {
-      cmdList += "L";
-
-      delay(100);
-      while(readComOutIn(LOW, HIGH, LOW));
-    } 
-    
-    else if(readComOutIn(LOW, HIGH, HIGH)) {
-      cmdList += "F";
-      
-      delay(100);
-      while(readComOutIn(LOW, HIGH, HIGH));
-    }
-}
-
-*/
 
 void processCmd() {
+
+  cmdList = "F"+cmdList;
+  Serial.println(cmdList);
   for (int i = 0 ; i < cmdList.length() ; i++) {
     char cmd = cmdList.charAt(0);
+
+    if(cmdList.length()>1) {
+      char nxtCmd = cmdList.charAt(1);
+      lightNxtCmd(nxtCmd);
+      Serial.print("NEXT CMD : ");
+      Serial.println(nxtCmd);
+    } else {
+      writeShiftRegister(B11110000);
+    }
     cmdList.remove(0,1);
-    Serial.println("List: " + cmdList);
-    
-    if(cmd == 'F') {
-      Serial.println("Following line");
-      writeShiftRegister(B00010000);
-      followLine();
-      //writeShiftRegister(B00000000);
+
+    followLine();
       
-    } else if (cmd == 'R') {
+    if (cmd == 'R') {
 
       Serial.println("Going right");
-      writeShiftRegister(B00100000);
       turnRight();
-      //writeShiftRegister(B00000000);
       
     } else if (cmd == 'L') {
       
       Serial.println("Going left");
-      writeShiftRegister(B01000000);
       turnLeft();
-      //writeShiftRegister(B00000000);
       
     } else if (cmd == 'U') {
 
-      Serial.println("Processing L");
-      writeShiftRegister(B10000000);
+      Serial.println("Going U");
       uTurn();
-      //writeShiftRegister(B00000000);
       
-    }
+    } else if (cmd == 'F') {
+
+      Serial.println("Going straight");
+      followLine();
   }
-  writeShiftRegister(B00000000);
+  
   if(cmdList=="") {
     changeState();
   }
-  
+  }
 }

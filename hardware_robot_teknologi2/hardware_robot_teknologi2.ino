@@ -30,7 +30,7 @@ int buttonPin = 2;
 
 bool buttonState = digitalRead(buttonPin);
 
-String cmdList = "LRU";
+String cmdList = "RLLSSL"; //Optimal path from G to R
 
 
 
@@ -85,14 +85,12 @@ void loop() {
 }
 
 
-
 void followLine() {
-
   Serial.println("Following line");
-  //analogLeft = analogRead(leftLineSensor);
-  //analogRight = analogRead(rightLineSensor);
-  
+
   while(true) {
+
+    // LEFT DC
     if(analogRead(leftLineSensor) < 700){
       //Motor A (Left - drive)
       digitalWrite(motorLeftDirection, HIGH);
@@ -105,7 +103,8 @@ void followLine() {
       analogWrite(motorLeftSpeed, 0);
       delay(10);
     }
-  
+
+    // RIGHT DC
     if( analogRead(rightLineSensor) < 700){
       //Motor B (Right - drive)
       digitalWrite(motorRightDirection, LOW);
@@ -124,6 +123,7 @@ void followLine() {
     }
   }  
 }
+
 void turnRight(){
   //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
@@ -145,8 +145,8 @@ void turnRight(){
     }
   }
 }
-void turnLeft() {
 
+void turnLeft() {
   //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
   
@@ -167,8 +167,22 @@ void turnLeft() {
     }
   }
 }
-void uTurn() {
 
+void continueStraight() {
+  Serial.println("continuing straight");
+  while(true) {
+    digitalWrite(motorRightDirection, LOW);
+    analogWrite(motorRightSpeed, 150);
+    digitalWrite(motorLefttDirection, HIGH);
+    analogWrite(motorLeftSpeed, 150);
+    if(analogRead(rightLineSensor) < 700 && analogRead(leftLineSensor) < 700) { //If hits white
+      drive(HIGH, 150, LOW, 150, 100); // Security-distance to be secure
+      break;  
+    }
+  }
+}
+
+void uTurn() {
   //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
   
@@ -203,7 +217,6 @@ void uTurn() {
     }
   }
 }
-
 
 
 
@@ -242,13 +255,8 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   analogWrite(motorRightSpeed, rightSpeed);
 
   //Driving distance/time
-  /*
-   for (int i = 0 ; i < 1000 ; i++) {
-    delay(distance/1000);
-    }
-    */
-
   delay(distance);
+  
   //stop
   analogWrite(motorRightSpeed, 0);
   analogWrite(motorLeftSpeed, 0);
@@ -267,38 +275,52 @@ String changeState(){
 
 
 void lightNxtCmd(char nextCmd) {
-  if(nextCmd == 'R') {
-    Serial.println("R-LIGHT");
+  if(nextCmd == 'S') {
+    Serial.println("S-LIGHT");
     writeShiftRegister(B10000000);
+  
+  } else if(nextCmd == 'R') {
+    Serial.println("R-LIGHT");
+    writeShiftRegister(B01000000);
+  
   } else if(nextCmd == 'L') {
     Serial.println("L-LIGHT");
-    writeShiftRegister(B01000000);
+    writeShiftRegister(B00100000);
+  
   } else if(nextCmd == 'U') {
     Serial.println("U-LIGHT");
-    writeShiftRegister(B00100000);
+    writeShiftRegister(B00010000);
   } 
 }
 
 void processCmd() {
 
-  cmdList = "F"+cmdList;
   Serial.println(cmdList);
   for (int i = 0 ; i < cmdList.length() ; i++) {
     char cmd = cmdList.charAt(0);
 
     if(cmdList.length()>1) {
-      char nxtCmd = cmdList.charAt(1);
-      lightNxtCmd(nxtCmd);
-      Serial.print("NEXT CMD : ");
-      Serial.println(nxtCmd);
+      if (i==0) {
+        char nxtCmd = cmdList.charAt(0);
+      } else {
+        char nxtCmd = cmdList.charAt(1);
+        lightNxtCmd(nxtCmd);
+        Serial.print("NEXT CMD : ");
+        Serial.println(nxtCmd); 
+      }
     } else {
       writeShiftRegister(B11110000);
     }
     cmdList.remove(0,1);
 
     followLine();
+
+    if (cmd == 'S') {
       
-    if (cmd == 'R') {
+      Serial.println("Continuing straight");
+      continueStraight();
+      
+    } else if (cmd == 'R') {
 
       Serial.println("Going right");
       turnRight();
@@ -313,11 +335,7 @@ void processCmd() {
       Serial.println("Going U");
       uTurn();
       
-    } else if (cmd == 'F') {
-
-      Serial.println("Going straight");
-      followLine();
-  }
+    }
   
   if(cmdList=="") {
     changeState();

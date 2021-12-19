@@ -89,12 +89,13 @@ void followLine() {
   Serial.println("Following line");
 
   while(true) {
+    
 
     // LEFT DC
-    if(analogRead(leftLineSensor) < 700){
+    if(analogRead(leftLineSensor) < 800){
       //Motor A (Left - drive)
       digitalWrite(motorLeftDirection, HIGH);
-      analogWrite(motorLeftSpeed, 150);
+      analogWrite(motorLeftSpeed, 180);
       //Serial.println("Left");
     }
     else {
@@ -105,10 +106,10 @@ void followLine() {
     }
 
     // RIGHT DC
-    if( analogRead(rightLineSensor) < 700){
+    if(analogRead(rightLineSensor) < 800){
       //Motor B (Right - drive)
       digitalWrite(motorRightDirection, LOW);
-      analogWrite(motorRightSpeed, 150);
+      analogWrite(motorRightSpeed, 180);
     }
     else {
       //Motor B (Right - stop)
@@ -117,7 +118,7 @@ void followLine() {
       delay(10);
     }
 
-    if(analogRead(leftLineSensor) > 700 &&  analogRead(rightLineSensor) > 700){
+    if(analogRead(leftLineSensor) > 800 &&  analogRead(rightLineSensor) > 800){
   
       break;
     }
@@ -131,7 +132,7 @@ void turnRight(){
   Serial.println("Turning right");
   while(true) {
     digitalWrite(motorLeftDirection, HIGH);
-    analogWrite(motorLeftSpeed, 150);
+    analogWrite(motorLeftSpeed, 180);
     if(analogRead(leftLineSensor) < 700) { //If hits white
       break;  
     }
@@ -139,7 +140,7 @@ void turnRight(){
 
   while(true) {
     digitalWrite(motorLeftDirection, HIGH);
-    analogWrite(motorLeftSpeed, 150);
+    analogWrite(motorLeftSpeed, 180);
     if(analogRead(leftLineSensor) > 700) { //If hits black
       break;
     }
@@ -153,7 +154,7 @@ void turnLeft() {
   Serial.println("Turning left");
   while(true) {
     digitalWrite(motorRightDirection, LOW);
-    analogWrite(motorRightSpeed, 150);
+    analogWrite(motorRightSpeed, 180);
     if(analogRead(rightLineSensor) < 700) { //If hits white
       break;  
     }
@@ -161,7 +162,7 @@ void turnLeft() {
 
   while(true) {
     digitalWrite(motorRightDirection, LOW);
-    analogWrite(motorRightSpeed, 150);
+    analogWrite(motorRightSpeed, 180);
     if(analogRead(rightLineSensor) > 700) { //If hits black
       break;
     }
@@ -169,17 +170,19 @@ void turnLeft() {
 }
 
 void continueStraight() {
+  drive(HIGH, 150, LOW, 150, 500);
+  /*
   Serial.println("continuing straight");
   while(true) {
     digitalWrite(motorRightDirection, LOW);
     analogWrite(motorRightSpeed, 150);
-    digitalWrite(motorLefttDirection, HIGH);
+    digitalWrite(motorLeftDirection, HIGH);
     analogWrite(motorLeftSpeed, 150);
     if(analogRead(rightLineSensor) < 700 && analogRead(leftLineSensor) < 700) { //If hits white
       drive(HIGH, 150, LOW, 150, 100); // Security-distance to be secure
       break;  
     }
-  }
+  }*/
 }
 
 void uTurn() {
@@ -294,22 +297,63 @@ void lightNxtCmd(char nextCmd) {
 }
 
 void processCmd() {
+  for (int i = 0 ; i < cmdList.length() ; i++) {
+    char cmd = cmdList.charAt(i);
+    char nxtCmd = cmdList.charAt(i);
 
+    lightNxtCmd(nxtCmd);
+
+    followLine();
+
+    if (cmd == 'S') {
+      
+      Serial.println("Continuing straight");
+      continueStraight();
+      
+    } else if (cmd == 'R') {
+
+      Serial.println("Going right");
+      turnRight();
+      
+    } else if (cmd == 'L') {
+      
+      Serial.println("Going left");
+      turnLeft();
+      
+    } else if (cmd == 'U') {
+
+      Serial.println("Going U");
+      uTurn();
+    
+    }
+
+    if(i == cmdList.length()-1){
+      writeShiftRegister(B11110000); // Lights up when cmdList empty
+      followLine();
+      while(true) {
+        drive(LOW, 0, HIGH, 0, 0); 
+      }
+    }
+    
+  }
+
+  /*
   Serial.println(cmdList);
   for (int i = 0 ; i < cmdList.length() ; i++) {
     char cmd = cmdList.charAt(0);
-
-    if(cmdList.length()>1) {
+    char nxtCmd;
+    
+    if(cmdList.length()>0) {
       if (i==0) {
-        char nxtCmd = cmdList.charAt(0);
+        nxtCmd = cmdList.charAt(0);
       } else {
-        char nxtCmd = cmdList.charAt(1);
-        lightNxtCmd(nxtCmd);
-        Serial.print("NEXT CMD : ");
-        Serial.println(nxtCmd); 
+        nxtCmd = cmdList.charAt(1);
       }
+
+      lightNxtCmd(nxtCmd);
+      
     } else {
-      writeShiftRegister(B11110000);
+      writeShiftRegister(B11110000); // Lights up when cmdList empty
     }
     cmdList.remove(0,1);
 
@@ -340,5 +384,5 @@ void processCmd() {
   if(cmdList=="") {
     changeState();
   }
-  }
+  }*/
 }

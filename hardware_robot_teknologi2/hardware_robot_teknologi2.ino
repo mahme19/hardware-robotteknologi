@@ -7,9 +7,6 @@ int motorLeftSpeed = 6;        //PWM A
 int motorRightDirection = 13;   //DIR B
 int motorRightSpeed = 11;       //PWM B
 
-
-String stateButton = "Stop";
-
 // Shift-Register
 int latchPin = 5; //ST_CP or RCLK
 int clockPin = 4; //SH_CP or SRCLK
@@ -18,7 +15,7 @@ int dataPin = 7; //DS or SER
 // Distance-sensor
 int trigPin = 9;            //the used trig pin
 int echoPin = 8;            //the used echo pin
-//int distance; //Distance of elements in front of robot
+
 
 // Line-sensor
 int leftLineSensor= A5;
@@ -38,14 +35,6 @@ void setup() {
 
   // button
   pinMode(buttonPin, INPUT);
-  
-  // multiplexer
-  /*
-  pinMode(pinA, OUTPUT);
-  pinMode(pinB, OUTPUT);
-  pinMode(pinC, OUTPUT);
-  pinMode(comOutInPin, INPUT_PULLUP);
-  */
   
   //Motor A (Left)
   pinMode(motorLeftDirection, OUTPUT);
@@ -70,11 +59,6 @@ void setup() {
   pinMode(leftLineSensor, INPUT);
   pinMode(rightLineSensor, INPUT);
 
- 
-  
-  //EEPROM
- // cmdList = readFromEEPROM();
-
   writeShiftRegister(B00000000);
 
 }
@@ -86,10 +70,8 @@ void loop() {
 
 
 void followLine() {
-  Serial.println("Following line");
 
   while(true) {
-    
 
     // LEFT DC
     if(analogRead(leftLineSensor) < 800){
@@ -171,18 +153,6 @@ void turnLeft() {
 
 void continueStraight() {
   drive(HIGH, 150, LOW, 150, 500);
-  /*
-  Serial.println("continuing straight");
-  while(true) {
-    digitalWrite(motorRightDirection, LOW);
-    analogWrite(motorRightSpeed, 150);
-    digitalWrite(motorLeftDirection, HIGH);
-    analogWrite(motorLeftSpeed, 150);
-    if(analogRead(rightLineSensor) < 700 && analogRead(leftLineSensor) < 700) { //If hits white
-      drive(HIGH, 150, LOW, 150, 100); // Security-distance to be secure
-      break;  
-    }
-  }*/
 }
 
 void uTurn() {
@@ -266,17 +236,6 @@ void drive(boolean leftDirection, int leftSpeed, boolean rightDirection, int rig
   
 }
 
-String changeState(){
-  if(stateButton == "Stop"){
-    stateButton = "Start";
-  } else if (stateButton == "Start") {
-    stateButton = "Stop";
-    cmdList = "";
-  }
-  return stateButton;
-}
-
-
 void lightNxtCmd(char nextCmd) {
   if(nextCmd == 'S') {
     Serial.println("S-LIGHT");
@@ -333,56 +292,6 @@ void processCmd() {
       while(true) {
         drive(LOW, 0, HIGH, 0, 0); 
       }
-    }
-    
+    } 
   }
-
-  /*
-  Serial.println(cmdList);
-  for (int i = 0 ; i < cmdList.length() ; i++) {
-    char cmd = cmdList.charAt(0);
-    char nxtCmd;
-    
-    if(cmdList.length()>0) {
-      if (i==0) {
-        nxtCmd = cmdList.charAt(0);
-      } else {
-        nxtCmd = cmdList.charAt(1);
-      }
-
-      lightNxtCmd(nxtCmd);
-      
-    } else {
-      writeShiftRegister(B11110000); // Lights up when cmdList empty
-    }
-    cmdList.remove(0,1);
-
-    followLine();
-
-    if (cmd == 'S') {
-      
-      Serial.println("Continuing straight");
-      continueStraight();
-      
-    } else if (cmd == 'R') {
-
-      Serial.println("Going right");
-      turnRight();
-      
-    } else if (cmd == 'L') {
-      
-      Serial.println("Going left");
-      turnLeft();
-      
-    } else if (cmd == 'U') {
-
-      Serial.println("Going U");
-      uTurn();
-      
-    }
-  
-  if(cmdList=="") {
-    changeState();
-  }
-  }*/
 }

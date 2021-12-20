@@ -258,9 +258,8 @@ void lightNxtCmd(char nextCmd) {
 void processCmd() {
   for (int i = 0 ; i < cmdList.length() ; i++) {
     char cmd = cmdList.charAt(i);
-    char nxtCmd = cmdList.charAt(i);
 
-    lightNxtCmd(nxtCmd);
+    lightNxtCmd(cmd);
 
     followLine();
 

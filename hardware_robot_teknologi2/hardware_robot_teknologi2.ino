@@ -63,7 +63,7 @@ void setup() {
 
 }
 
-//TODO: Den stopper ved sidste U-cmd. Tjek at foorlop i processcmd kører korrekt.
+
 void loop() {
   processCmd();
 }
@@ -74,7 +74,7 @@ void followLine() {
   while(true) {
 
     // LEFT DC
-    if(analogRead(leftLineSensor) < 800){
+    if(analogRead(leftLineSensor) < 800 && getDistance() > 30){
       //Motor A (Left - drive)
       digitalWrite(motorLeftDirection, HIGH);
       analogWrite(motorLeftSpeed, 180);
@@ -88,7 +88,7 @@ void followLine() {
     }
 
     // RIGHT DC
-    if(analogRead(rightLineSensor) < 800){
+    if(analogRead(rightLineSensor) < 800 && getDistance() > 30){
       //Motor B (Right - drive)
       digitalWrite(motorRightDirection, LOW);
       analogWrite(motorRightSpeed, 180);
@@ -108,7 +108,7 @@ void followLine() {
 }
 
 void turnRight(){
-  //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
+  //Bakker for at opnå optimalt udgangspunkt (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
   
   Serial.println("Turning right");
@@ -130,7 +130,7 @@ void turnRight(){
 }
 
 void turnLeft() {
-  //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
+  //Bakker for at opnå optimalt udgangspunkt (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
   
   Serial.println("Turning left");
@@ -156,7 +156,7 @@ void continueStraight() {
 }
 
 void uTurn() {
-  //Bakker lidt FOR PRÆCISON AF DREJNING (VIGTIGT)
+  //Bakker for at opnå optimalt udgangspunkt (VIGTIGT)
   drive(LOW, 150, HIGH, 150, 10);
   
   Serial.println("U Turning");

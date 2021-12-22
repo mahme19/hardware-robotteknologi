@@ -1,29 +1,8 @@
-#Heuristic function has to be changed based on the Initial node and goal node.
-HEURISTIC = { 
-    'A': 8,
-    'B': 9,
-    'C': 8,
-    'D': 7,
-    'E': 6,
-    'F': 11,
-    'G': 12,
-    'H': 5,
-    'I': 4,
-    'J': 5,
-    'K': 4,
-    'L': 3,
-    'M': 4,
-    'N': 2,
-    'O': 2,
-    'P': 3,
-    'Q': 1,
-    'R': 0,
-    'S': 0
-}
+import math
 
 
 
-class Node:  # Node has only PARENT_NODE, STATE, DEPTH
+class Node:  
     def __init__(self, state, heuristic, parent=None, depth=0):
         self.STATE = state
         self.PARENT_NODE = parent
@@ -31,12 +10,12 @@ class Node:  # Node has only PARENT_NODE, STATE, DEPTH
         self.HEURISTIC = heuristic
         self.LENGTH = heuristic
 
-    def path(self):  # Create a list of nodes from the root to this node.
+    def path(self):  
         current_node = self
         path = [self]
-        while current_node.PARENT_NODE:  # while current node has parent
-            current_node = current_node.PARENT_NODE  # make parent the current node
-            path.append(current_node)   # add current node to path
+        while current_node.PARENT_NODE:  
+            current_node = current_node.PARENT_NODE  
+            path.append(current_node)
         return path
 
     def display(self):
@@ -66,6 +45,7 @@ def TREE_SEARCH():
         print("fringe: {}".format(fringe))
 
 
+
 '''
 Expands node and gets the successors (children) of that node.
 Return list of the successor nodes.
@@ -76,8 +56,8 @@ def EXPAND(node):
     successors = []
     children = successor_fn(node.STATE)
     for child in children:
-        s = Node(node, HEURISTIC[child[0]])  # create node for each in state list
-        s.STATE = child[0]  # e.g. result = 'F' then 'G' from list ['F', 'G']
+        s = Node(node, HEURISTIC[child[0]])  
+        s.STATE = child[0]  
         s.PARENT_NODE = node
         s.DEPTH = node.DEPTH + 1
         temp = STATE_SPACE[s.PARENT_NODE.STATE]
@@ -88,7 +68,6 @@ def EXPAND(node):
         s.LENGTH = s.HEURISTIC + temp_length + s.PARENT_NODE.LENGTH
         successors = INSERT(s, successors)
     return successors
-
 
 '''
 Insert node in to the queue (fringe).
@@ -126,25 +105,25 @@ def REMOVE_BEST(queue):
     return queue.pop(index)
 
 
-
 '''
 Successor function, mapping the nodes to its successors
 '''
 
 
-def successor_fn(state):  # Lookup list of successor states
+def successor_fn(state):  
     return STATE_SPACE[state]
-      # successor_fn( 'C' ) returns ['F', 'G']
+    
 
 
 INITIAL_STATE = 'G'
 GOAL_STATE = 'R'
 
 
+
 STATE_SPACE = {
     'A': [('B', 1), ('I', 4)],
-    'B': [('A', 1), ('F', 2),('C', 1) ],
-    'C': [('B', 1), ('D', 4)],
+    'B': [('A', 1), ('F', 2), ('C', 1)],
+    'C': [('B', 1), ('D', 1)],
     'D': [('C', 1), ('E', 1)],
     'E': [('D', 1), ('L', 3)],
     'F': [('G', 1), ('B', 2)],
@@ -154,14 +133,65 @@ STATE_SPACE = {
     'J': [('I', 1), ('K', 1), ('M', 1)],
     'K': [('H', 1), ('J', 1), ('L', 1)],
     'L': [('E', 3), ('K', 1), ('N', 1)],
-    'M': [('J', 1), ('P', 1),('N',2)],
+    'M': [('J', 1), ('P', 1), ('N', 2)],
     'N': [('L', 1), ('S', 2), ('M', 2)],
     'O': [('P', 1), ('I', 2), ('Q', 1)],
     'P': [('M', 1), ('O', 1)],
-    'Q': [('O', 1),('R', 1)],
-    'R': [('Q',1), ('S', 2)],
-    'S': [('N', 2),('R',2)]
+    'Q': [('O', 1), ('R', 1)],
+    'R': [('Q', 1), ('S', 2)],
+    'S': [('N', 2), ('R', 2)]
 }
+
+
+coordinate_system = {
+    'Q': [0, 0],
+    'O': [0, 1],
+    'I': [0, 3],
+    'A': [0, 7],
+    'R': [1, 0],
+    'P': [1, 1],
+    'M': [1, 2],
+    'J': [1, 3],
+    'F': [1, 5],
+    'B': [1, 7],
+    'K': [2, 3],
+    'H': [2, 4],
+    'G': [2, 5],
+    'D': [2, 6],
+    'C': [2, 7],
+    'S': [3, 0],
+    'N': [3, 2],
+    'L': [3, 3],
+    'E': [3, 6]
+
+}
+
+def distance(goal, current):
+    return  math.sqrt(((coordinate_system[goal][0]-coordinate_system[current][0])**2)+((coordinate_system[goal][1]-coordinate_system[current][1])**2))
+
+HEURISTIC = { 
+    'A': distance(GOAL_STATE, 'A'),
+    'B': distance(GOAL_STATE, 'B'),
+    'C': distance(GOAL_STATE, 'C'),
+    'D': distance(GOAL_STATE, 'D'),
+    'E': distance(GOAL_STATE, 'E'),
+    'F': distance(GOAL_STATE, 'F'),
+    'G': distance(GOAL_STATE, 'G'),
+    'H': distance(GOAL_STATE, 'H'),
+    'I': distance(GOAL_STATE, 'I'),
+    'J': distance(GOAL_STATE, 'J'),
+    'K': distance(GOAL_STATE, 'K'),
+    'L': distance(GOAL_STATE, 'L'),
+    'M': distance(GOAL_STATE, 'M'),
+    'N': distance(GOAL_STATE, 'N'),
+    'O': distance(GOAL_STATE, 'O'),
+    'P': distance(GOAL_STATE, 'P'),
+    'Q': distance(GOAL_STATE, 'Q'),
+    'R': distance(GOAL_STATE, 'R'),
+    'S': distance(GOAL_STATE, 'S')
+}
+
+    
 
 
 '''
@@ -178,3 +208,4 @@ def run():
 
 if __name__ == '__main__':
     run()
+
